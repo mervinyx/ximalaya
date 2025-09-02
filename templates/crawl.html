@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>执行爬虫任务 - 喜马拉雅主播信息爬虫工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .url-list {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .url-list h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .url-item {
+            background: white;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
+        }
+        
+        .progress-container {
+            display: none;
+            margin-bottom: 30px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .result-container {
+            display: none;
+            background: #f0f8ff;
+            border: 1px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .result-title {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .result-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        
+        .result-stat {
+            text-align: center;
+        }
+        
+        .result-stat-number {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .total { color: #667eea; }
+        
+        .result-stat-label {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert-error {
+            background-color: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+        }
+        
+        .alert-success {
+            background-color: #efe;
+            border: 1px solid #cfc;
+            color: #3c3;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 执行爬虫任务</h1>
+            <p>已解析Excel文件，准备开始爬取主播信息</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number">{{ url_count }}</div>
+                <div class="stat-label">待爬取URL数量</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">~{{ (url_count * 3)|int }}</div>
+                <div class="stat-label">预计耗时(分钟)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">数据准确率</div>
+            </div>
+        </div>
+        
+        <div class="url-list">
+            <h3>📋 URL列表预览</h3>
+            {% for url in urls[:10] %}
+            <div class="url-item">{{ loop.index }}. {{ url }}</div>
+            {% endfor %}
+            {% if urls|length > 10 %}
+            <div class="url-item" style="text-align: center; color: #666; font-style: italic;">
+                ... 还有 {{ urls|length - 10 }} 个URL
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="alert alert-error" id="errorAlert"></div>
+        <div class="alert alert-success" id="successAlert"></div>
+        
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">准备开始爬虫...</div>
+        </div>
+        
+        <div class="result-container" id="resultContainer">
+            <div class="result-title">🎉 爬虫任务完成！</div>
+            <div class="result-stats">
+                <div class="result-stat">
+                    <div class="result-stat-number total" id="totalCount">0</div>
+                    <div class="result-stat-label">总计URL</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-number success" id="successCount">0</div>
+                    <div class="result-stat-label">成功爬取</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-number error" id="errorCount">0</div>
+                    <div class="result-stat-label">失败数量</div>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <button class="btn" id="downloadBtn" onclick="downloadResult()">
+                    📥 下载结果文件
+                </button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="startBtn" onclick="startCrawl()">
+                🕷️ 开始爬虫
+            </button>
+            <button class="btn btn-secondary" onclick="goBack()">
+                ⬅️ 返回上传
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        let resultFileName = '';
+        
+        function startCrawl() {
+            const startBtn = document.getElementById('startBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            // 禁用按钮并显示加载状态
+            startBtn.innerHTML = '<div class="loading"></div>正在爬取中...';
+            startBtn.disabled = true;
+            
+            // 显示进度条
+            progressContainer.style.display = 'block';
+            
+            // 模拟进度更新
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+                progressText.textContent = `正在爬取中... ${Math.round(progress)}%`;
+            }, 1000);
+            
+            // 发送爬虫请求
+            fetch('/crawl', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'filename={{ filename }}'
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                progressText.textContent = '爬虫完成！';
+                
+                if (data.success) {
+                    // 显示成功结果
+                    showSuccess(data.message);
+                    showResult(data);
+                    resultFileName = data.result_file;
+                } else {
+                    showError(data.error || '爬虫执行失败');
+                    startBtn.innerHTML = '🕷️ 重新开始爬虫';
+                    startBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                console.error('Error:', error);
+                showError('网络错误，请重试');
+                startBtn.innerHTML = '🕷️ 重新开始爬虫';
+                startBtn.disabled = false;
+            });
+        }
+        
+        function showResult(data) {
+            const resultContainer = document.getElementById('resultContainer');
+            const totalCount = document.getElementById('totalCount');
+            const successCount = document.getElementById('successCount');
+            const errorCount = document.getElementById('errorCount');
+            
+            totalCount.textContent = data.total_urls;
+            successCount.textContent = data.success_count;
+            errorCount.textContent = data.error_count;
+            
+            resultContainer.style.display = 'block';
+        }
+        
+        function downloadResult() {
+            if (resultFileName) {
+                window.location.href = '/download/' + resultFileName;
+            }
+        }
+        
+        function goBack() {
+            window.location.href = '/';
+        }
+        
+        function showError(message) {
+            const errorAlert = document.getElementById('errorAlert');
+            errorAlert.textContent = message;
+            errorAlert.style.display = 'block';
+            hideSuccess();
+        }
+        
+        function showSuccess(message) {
+            const successAlert = document.getElementById('successAlert');
+            successAlert.textContent = message;
+            successAlert.style.display = 'block';
+            hideError();
+        }
+        
+        function hideError() {
+            document.getElementById('errorAlert').style.display = 'none';
+        }
+        
+        function hideSuccess() {
+            document.getElementById('successAlert').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
