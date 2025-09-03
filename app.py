@@ -124,62 +124,69 @@ def upload_file():
 @app.route('/crawl', methods=['POST'])
 def start_crawl():
     """开始爬虫任务"""
-    filename = request.form.get('filename')
-    if not filename:
-        return jsonify({'error': '文件名缺失'}), 400
-    
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    if not os.path.exists(file_path):
-        return jsonify({'error': '文件不存在'}), 400
-    
-    # 读取URL列表
-    urls = read_urls_from_excel(file_path)
-    if not urls:
-        return jsonify({'error': 'Excel文件中没有找到有效的URL'}), 400
-    
-    # 初始化爬虫
-    crawler = XimalayaCrawlerFinal(use_selenium=True)
-    results = []
-    
     try:
-        for i, url in enumerate(urls):
-            try:
-                print(f"正在爬取第 {i+1}/{len(urls)} 个URL: {url}")
-                result = crawler.crawl_anchor_info(url)
-                result['url'] = url  # 添加URL到结果中
-                results.append(result)
-                
-                # 添加延迟避免被封
-                time.sleep(2)
-                
-            except Exception as e:
-                print(f"爬取URL {url} 时出错: {e}")
-                results.append({
-                    'url': url,
-                    'error': str(e),
-                    '爬取时间': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                })
+        filename = request.form.get('filename')
+        if not filename:
+            return jsonify({'error': '文件名缺失'}), 400
+        
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': '文件不存在'}), 400
+        
+        # 读取URL列表
+        urls = read_urls_from_excel(file_path)
+        if not urls:
+            return jsonify({'error': 'Excel文件中没有找到有效的URL'}), 400
+        
+        print(f"开始爬虫任务，共 {len(urls)} 个URL")
     
-    finally:
-        # 关闭爬虫
-        crawler.close()
-    
-    # 保存结果到Excel
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    result_filename = f"crawl_results_{timestamp}.xlsx"
-    result_path = save_results_to_excel(results, result_filename)
-    
-    if result_path:
-        return jsonify({
-            'success': True,
-            'message': f'爬虫完成！共处理 {len(urls)} 个URL，成功 {len([r for r in results if "error" not in r])} 个',
-            'result_file': result_filename,
-            'total_urls': len(urls),
-            'success_count': len([r for r in results if "error" not in r]),
-            'error_count': len([r for r in results if "error" in r])
-        })
-    else:
-        return jsonify({'error': '保存结果文件失败'}), 500
+        # 初始化爬虫
+        crawler = XimalayaCrawlerFinal(use_selenium=True)
+        results = []
+        
+        try:
+            for i, url in enumerate(urls):
+                try:
+                    print(f"正在爬取第 {i+1}/{len(urls)} 个URL: {url}")
+                    result = crawler.crawl_anchor_info(url)
+                    result['url'] = url  # 添加URL到结果中
+                    results.append(result)
+                    
+                    # 添加延迟避免被封
+                    time.sleep(2)
+                    
+                except Exception as e:
+                    print(f"爬取URL {url} 时出错: {e}")
+                    results.append({
+                        'url': url,
+                        'error': str(e),
+                        '爬取时间': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    })
+        
+        finally:
+            # 关闭爬虫
+            crawler.close()
+        
+        # 保存结果到Excel
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        result_filename = f"crawl_results_{timestamp}.xlsx"
+        result_path = save_results_to_excel(results, result_filename)
+        
+        if result_path:
+            return jsonify({
+                'success': True,
+                'message': f'爬虫完成！共处理 {len(urls)} 个URL，成功 {len([r for r in results if "error" not in r])} 个',
+                'result_file': result_filename,
+                'total_urls': len(urls),
+                'success_count': len([r for r in results if "error" not in r]),
+                'error_count': len([r for r in results if "error" in r])
+            })
+        else:
+            return jsonify({'error': '保存结果文件失败'}), 500
+            
+    except Exception as e:
+        print(f"爬虫任务执行失败: {e}")
+        return jsonify({'error': f'爬虫任务执行失败: {str(e)}'}), 500
 
 @app.route('/download/<filename>')
 def download_file(filename):

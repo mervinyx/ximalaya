@@ -337,15 +337,26 @@
                 progressText.textContent = `正在爬取中... ${Math.round(progress)}%`;
             }, 1000);
             
+            // 创建AbortController用于超时控制
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
+            
             // 发送爬虫请求
             fetch('/crawl', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: 'filename={{ filename }}'
+                body: 'filename={{ filename }}',
+                signal: controller.signal
             })
-            .then(response => response.json())
+            .then(response => {
+                clearTimeout(timeoutId); // 清理超时定时器
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 clearInterval(progressInterval);
                 progressFill.style.width = '100%';
@@ -364,8 +375,19 @@
             })
             .catch(error => {
                 clearInterval(progressInterval);
+                clearTimeout(timeoutId); // 清理超时定时器
                 console.error('Error:', error);
-                showError('网络错误，请重试');
+                
+                let errorMessage = '网络错误，请重试';
+                if (error.name === 'AbortError') {
+                    errorMessage = '请求超时（5分钟），请检查网络连接或减少URL数量后重试';
+                } else if (error.message.includes('HTTP')) {
+                    errorMessage = `服务器错误：${error.message}`;
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = '网络连接失败，请检查网络连接后重试';
+                }
+                
+                showError(errorMessage);
                 startBtn.innerHTML = '🕷️ 重新开始爬虫';
                 startBtn.disabled = false;
             });
