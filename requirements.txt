@@ -1,6 +1,7 @@
 # Web框架
 Flask>=2.3.0
 Werkzeug>=2.3.0
+gunicorn>=20.1.0
 
 # 数据处理
 pandas>=1.5.0

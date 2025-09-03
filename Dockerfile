@@ -48,4 +48,4 @@ ENV DISPLAY=:99
 EXPOSE 5002
 
 # 启动命令
-CMD ["python", "app.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5002", "--workers", "1", "--timeout", "300", "app:app"]
