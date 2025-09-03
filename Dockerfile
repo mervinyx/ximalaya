@@ -19,11 +19,19 @@ RUN wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com
     && rm /tmp/google-chrome-stable_current_amd64.deb \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装ChromeDriver
-RUN CHROME_DRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE` \
-    && wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip \
-    && unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ \
-    && rm /tmp/chromedriver.zip \
+# 安装ChromeDriver - 使用新的Chrome for Testing API
+RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1-3) \
+    && echo "Chrome version: $CHROME_VERSION" \
+    && CHROMEDRIVER_URL="https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json" \
+    && CHROMEDRIVER_VERSION=$(curl -s $CHROMEDRIVER_URL | grep -o '"version":"'$CHROME_VERSION'[^"]*"' | head -1 | cut -d'"' -f4) \
+    && if [ -z "$CHROMEDRIVER_VERSION" ]; then \
+         CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/latest-versions-per-milestone.json" | grep -o '"'$CHROME_VERSION'":"[^"]*"' | cut -d'"' -f4); \
+       fi \
+    && echo "ChromeDriver version: $CHROMEDRIVER_VERSION" \
+    && wget -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/$CHROMEDRIVER_VERSION/linux64/chromedriver-linux64.zip" \
+    && unzip /tmp/chromedriver.zip -d /tmp/ \
+    && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/ \
+    && rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64 \
     && chmod +x /usr/local/bin/chromedriver
 
 # 复制requirements文件

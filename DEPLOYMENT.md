@@ -4,6 +4,18 @@
 
 ## 📋 部署前准备
 
+### 重要提示：ChromeDriver版本兼容性
+如果遇到以下错误信息：
+```
+The chromedriver version (114.0.5735.90) detected in PATH at /usr/local/bin/chromedriver might not be compatible with the detected chrome version (140.0.7339.80)
+```
+
+这是因为Chrome和ChromeDriver版本不匹配导致的。本项目已更新Dockerfile使用新的Chrome for Testing API来自动获取匹配的ChromeDriver版本。
+
+**解决方案：**
+1. 重新构建Docker镜像
+2. 或者删除旧的ChromeDriver并重新部署
+
 ### 1. 确认项目文件
 确保项目包含以下文件：
 - `app.py` - Flask应用主文件
@@ -59,13 +71,61 @@ git commit -m "Initial commit: 喜马拉雅主播信息爬虫Web应用"
 
 ### 步骤 5: 连接远程仓库
 ```bash
-# 添加远程仓库（替换为你的GitHub用户名）
+# 添加远程仓库（替换为你的GitHub用户名和仓库名）
 git remote add origin https://github.com/YOUR_USERNAME/ximalaya-crawler.git
 
-# 推送代码
+# 推送代码到GitHub
 git branch -M main
 git push -u origin main
 ```
+
+## 🔧 故障排除
+
+### ChromeDriver版本不兼容问题
+
+**问题描述：**
+```
+The chromedriver version (114.0.5735.90) detected in PATH at /usr/local/bin/chromedriver might not be compatible with the detected chrome version (140.0.7339.80)
+```
+
+**解决步骤：**
+
+1. **在Zeabur重新部署：**
+   - 登录Zeabur控制台
+   - 找到你的项目
+   - 点击「Redeploy」按钮
+   - 等待重新构建完成
+
+2. **如果问题仍然存在，强制重建：**
+   - 在GitHub仓库中做一个小的提交（比如更新README）
+   - 推送到GitHub
+   - Zeabur会自动触发重新部署
+
+3. **本地测试（可选）：**
+   ```bash
+   # 重新构建Docker镜像
+   docker build -t ximalaya-crawler .
+   
+   # 运行容器测试
+   docker run -p 8080:8080 ximalaya-crawler
+   ```
+
+**技术说明：**
+- 旧版本使用的chromedriver.storage.googleapis.com API已被弃用
+- 新版本使用Chrome for Testing API自动匹配Chrome和ChromeDriver版本
+- 确保Chrome和ChromeDriver版本完全兼容
+
+### 其他常见问题
+
+**问题：爬虫超时或无响应**
+- 检查目标网站是否可访问
+- 确认网络连接正常
+- 查看应用日志获取详细错误信息
+
+**问题：文件上传失败**
+ - 确认文件格式正确（支持.txt, .csv, .xlsx）
+  - 检查文件大小是否超出限制
+   - 确保文件内容格式正确
 
 ## 🌐 Zeabur 部署步骤
 
